@@ -1,6 +1,7 @@
 /bin
 /.idea
 /lib
+/lib64
 /__pycache__
 Dockerfile
 *.pyc
