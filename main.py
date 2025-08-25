@@ -71,7 +71,11 @@ async def makeschedule(ctx, year: int, month: int) -> None:
     return
 
 @client.command(brief="Add name(s) from operation automatically. Takes Year (YYYY), Month(M or MM), day (D or DD) and optionally targetted users")
+<<<<<<< HEAD
 async def adddev (ctx, year:int, month:int, day:str, *args) -> None:
+=======
+async def addname (ctx, year:int, month:int, day:str, *args) -> None:
+>>>>>>> a5312a94cda57b6fe78b3aeb48ff657d32246a33
   print(year, month, day, args)
   if len(args) == 0:
     target = [f"<@{ctx.author.id}>"]
@@ -84,6 +88,7 @@ async def adddev (ctx, year:int, month:int, day:str, *args) -> None:
     await ctx.channel.send("Error: File not found")
     return
   
+<<<<<<< HEAD
   for operation in data.keys():
     sub_sect = operation.split(" ")
     if sub_sect[1] == day:
@@ -96,6 +101,19 @@ async def adddev (ctx, year:int, month:int, day:str, *args) -> None:
         output_str = str(output_str) + " " + user
       data[operation] = [output_str, data[operation][1]] 
 
+=======
+  
+  for operation in data.keys():
+    sub_sect = operation.split(" ")
+    if sub_sect[1] == day:
+      print(operation)
+      output_str = data[operation]
+      for user in target:
+        print(user)
+        output_str = output_str + user + " "
+      data[operation] = output_str
+  
+>>>>>>> a5312a94cda57b6fe78b3aeb48ff657d32246a33
   with open(f"./archives/operations-{month}-{year}.pkl", "wb") as f:
     pickle.dump(data, f)
   
@@ -119,8 +137,16 @@ async def adddev (ctx, year:int, month:int, day:str, *args) -> None:
   message = await channel.fetch_message(data["message id"])
   await message.edit(embed=embed)
 
+<<<<<<< HEAD
 @client.command(brief="Add mission name(s) from operation automatically. Takes Year (YYYY), Month(M or MM), day (D or DD) and optionally targetted users")
 async def addmission (ctx, year:int, month:int, day:str, *args) -> None:
+=======
+
+
+
+@client.command(brief="Remove name(s) from operation automatically. Takes Year (YYYY), Month(M or MM) and day (D or DD)")
+async def removename (ctx, year:int, month:int, day:str, *args) -> None:
+>>>>>>> a5312a94cda57b6fe78b3aeb48ff657d32246a33
   print(year, month, day, args)
   if len(args) == 0:
     target = [f"<@{ctx.author.id}>"]
@@ -131,6 +157,7 @@ async def addmission (ctx, year:int, month:int, day:str, *args) -> None:
       data = pickle.load(f)
   except:
     await ctx.channel.send("Error: File not found")
+<<<<<<< HEAD
     return
   
   
@@ -182,6 +209,8 @@ async def removedev (ctx, year:int, month:int, day:str, *args) -> None:
       data = pickle.load(f)
   except:
     await ctx.channel.send("Error: File not found")
+=======
+>>>>>>> a5312a94cda57b6fe78b3aeb48ff657d32246a33
 
   print(data)
   
@@ -191,7 +220,11 @@ async def removedev (ctx, year:int, month:int, day:str, *args) -> None:
     if sub_sect[1] == day:
       print(operation)
 
+<<<<<<< HEAD
       users = data[operation][0].split(" ")
+=======
+      users = data[operation].split(" ")
+>>>>>>> a5312a94cda57b6fe78b3aeb48ff657d32246a33
       print(users)
       for user in target:
         users.remove(user)
@@ -201,7 +234,11 @@ async def removedev (ctx, year:int, month:int, day:str, *args) -> None:
       print(output_str)
       if not output_str:
         output_str = None
+<<<<<<< HEAD
       data[operation][0] = output_str
+=======
+      data[operation] = output_str
+>>>>>>> a5312a94cda57b6fe78b3aeb48ff657d32246a33
   
   with open(f"./archives/operations-{month}-{year}.pkl", "wb") as f:
     pickle.dump(data, f)
@@ -226,6 +263,7 @@ async def removedev (ctx, year:int, month:int, day:str, *args) -> None:
   message = await channel.fetch_message(data["message id"])
   await message.edit(embed=embed)
 
+<<<<<<< HEAD
 @client.command(brief="Remove name(s) from operation automatically. Takes Year (YYYY), Month(M or MM) and day (D or DD)")
 async def removemission (ctx, year:int, month:int, day:str) -> None:
   print(year, month, day)
@@ -266,6 +304,8 @@ async def removemission (ctx, year:int, month:int, day:str) -> None:
   channel = client.get_channel(data["channel id"])
   message = await channel.fetch_message(data["message id"])
   await message.edit(embed=embed)
+=======
+>>>>>>> a5312a94cda57b6fe78b3aeb48ff657d32246a33
 
 @client.command(brief="Moves entire schedule post to an archive")
 async def movepost (ctx, year:int, month:int) -> None:
