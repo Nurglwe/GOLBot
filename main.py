@@ -1,6 +1,7 @@
 import discord.object
 import discord,os,tools, calendar, pickle
 from discord.ext import commands
+from datetime import date
 from discord import app_commands
 intents = discord.Intents.all()
 intents.members = True
@@ -24,20 +25,22 @@ Below is commands
 
 '''
 @client.tree.command(
-    name="create schedule", 
+    name="create-schedule", 
     description="Creates a table of thursdays and sundays in a month"
   )
 @app_commands.describe(month= "Month (1-12)", year="Year")
 interaction: discord.Interaction,
 '''
+
 @client.command(brief="Create an orbat for a given year (YYYY) and month (M or MM)")
 async def makeschedule(ctx, year: int, month: int) -> None:
   standard_op_days = {}
   print(month, year)
+  print()
   if os.path.exists(f"./archives/operations-{month}-{year}.pkl"):
     await ctx.channel.send("Error file already exists. Please delete it or edit it.")
     return
-
+  
   if not(month < 1 or month > 12):
     month_str = calendar.month_name[int(month)]
     first_day, num_days = calendar.monthrange(year, month)
@@ -226,7 +229,7 @@ async def removedev (ctx, year:int, month:int, day:str, *args) -> None:
   message = await channel.fetch_message(data["message id"])
   await message.edit(embed=embed)
 
-@client.command(brief="Remove name(s) from operation automatically. Takes Year (YYYY), Month(M or MM) and day (D or DD)")
+@client.command(brief="Remove mission name(s) from operation automatically. Takes Year (YYYY), Month(M or MM) and day (D or DD)")
 async def removemission (ctx, year:int, month:int, day:str) -> None:
   print(year, month, day)
   try:
