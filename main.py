@@ -46,9 +46,9 @@ async def makeschedule(ctx, year: int, month: int) -> None:
     for day in range(1, num_days + 1):
       week_day += 1
       if week_day  == 4:
-        standard_op_days.update({f"{calendar.day_name[week_day-1]} {day} <:Training:1173686838926512199>": None})
+        standard_op_days.update({f"{calendar.day_name[week_day-1]} {day} <:Training:1173686838926512199>": [None, None]})
       if week_day >= 7:
-        standard_op_days.update({f"{calendar.day_name[week_day-1]} {day} <:Mission:1173686836451885076>": None})
+        standard_op_days.update({f"{calendar.day_name[week_day-1]} {day} <:Mission:1173686836451885076>": [None, None]})
         week_day = 0
 
     embed = tools.embedhandler(
@@ -71,7 +71,56 @@ async def makeschedule(ctx, year: int, month: int) -> None:
     return
 
 @client.command(brief="Add name(s) from operation automatically. Takes Year (YYYY), Month(M or MM), day (D or DD) and optionally targetted users")
-async def addname (ctx, year:int, month:int, day:str, *args) -> None:
+async def adddev (ctx, year:int, month:int, day:str, *args) -> None:
+  print(year, month, day, args)
+  if len(args) == 0:
+    target = [f"<@{ctx.author.id}>"]
+  else:
+    target = [user for user in args]
+  try:
+    with open(f"./archives/operations-{month}-{year}.pkl", "rb") as f:
+      data = pickle.load(f)
+  except:
+    await ctx.channel.send("Error: File not found")
+    return
+  
+  for operation in data.keys():
+    sub_sect = operation.split(" ")
+    if sub_sect[1] == day:
+      print(data[operation][0])
+      output_str = data[operation][0]
+      if output_str == None:
+        output_str = ''
+      for user in target:
+        print(user)
+        output_str = str(output_str) + " " + user
+      data[operation] = [output_str, data[operation][1]] 
+
+  with open(f"./archives/operations-{month}-{year}.pkl", "wb") as f:
+    pickle.dump(data, f)
+  
+  sanitised_data = data.copy()
+  sanitised_data.pop("message id")
+  sanitised_data.pop("channel id")
+  print(sanitised_data)
+  print(data)
+
+  month_str = calendar.month_name[int(month)]
+  embed = tools.embedhandler(
+    f"Operations for {month_str} {year}",
+    0x154c79,
+    None,
+    False,
+    None,
+    client
+  )
+  embed = await tools.embedhandler.sendembed(embed, sanitised_data)
+  channel = client.get_channel(data["channel id"])
+  message = await channel.fetch_message(data["message id"])
+  await message.edit(embed=embed)
+
+@client.command(brief="Add mission name(s) from operation automatically. Takes Year (YYYY), Month(M or MM), day (D or DD) and optionally targetted users")
+async def addmission (ctx, year:int, month:int, day:str, *args) -> None:
   print(year, month, day, args)
   if len(args) == 0:
     target = [f"<@{ctx.author.id}>"]
@@ -88,12 +137,14 @@ async def addname (ctx, year:int, month:int, day:str, *args) -> None:
   for operation in data.keys():
     sub_sect = operation.split(" ")
     if sub_sect[1] == day:
-      print(operation)
-      output_str = data[operation]
+      print(data[operation][1])
+      output_str = data[operation][1]
+      if output_str == None:
+        output_str = ''
       for user in target:
         print(user)
-        output_str = output_str + user + " "
-      data[operation] = output_str
+        output_str = str(output_str) + " " + user
+      data[operation] = [data[operation][0], output_str] 
   
   with open(f"./archives/operations-{month}-{year}.pkl", "wb") as f:
     pickle.dump(data, f)
@@ -119,10 +170,8 @@ async def addname (ctx, year:int, month:int, day:str, *args) -> None:
   await message.edit(embed=embed)
 
 
-
-
 @client.command(brief="Remove name(s) from operation automatically. Takes Year (YYYY), Month(M or MM) and day (D or DD)")
-async def removename (ctx, year:int, month:int, day:str, *args) -> None:
+async def removedev (ctx, year:int, month:int, day:str, *args) -> None:
   print(year, month, day, args)
   if len(args) == 0:
     target = [f"<@{ctx.author.id}>"]
@@ -142,7 +191,7 @@ async def removename (ctx, year:int, month:int, day:str, *args) -> None:
     if sub_sect[1] == day:
       print(operation)
 
-      users = data[operation].split(" ")
+      users = data[operation][0].split(" ")
       print(users)
       for user in target:
         users.remove(user)
@@ -152,7 +201,7 @@ async def removename (ctx, year:int, month:int, day:str, *args) -> None:
       print(output_str)
       if not output_str:
         output_str = None
-      data[operation] = output_str
+      data[operation][0] = output_str
   
   with open(f"./archives/operations-{month}-{year}.pkl", "wb") as f:
     pickle.dump(data, f)
@@ -177,6 +226,46 @@ async def removename (ctx, year:int, month:int, day:str, *args) -> None:
   message = await channel.fetch_message(data["message id"])
   await message.edit(embed=embed)
 
+@client.command(brief="Remove name(s) from operation automatically. Takes Year (YYYY), Month(M or MM) and day (D or DD)")
+async def removemission (ctx, year:int, month:int, day:str) -> None:
+  print(year, month, day)
+  try:
+    with open(f"./archives/operations-{month}-{year}.pkl", "rb") as f:
+      data = pickle.load(f)
+  except:
+    await ctx.channel.send("Error: File not found")
+
+  print(data)
+  
+  output_str = ""
+  for operation in data.keys():
+    sub_sect = operation.split(" ")
+    if sub_sect[1] == day:
+      print(operation)
+      data[operation][1] = None
+
+  with open(f"./archives/operations-{month}-{year}.pkl", "wb") as f:
+    pickle.dump(data, f)
+
+  sanitised_data = data.copy()
+  sanitised_data.pop("message id")
+  sanitised_data.pop("channel id")
+  print(sanitised_data)  
+
+  month_str = calendar.month_name[int(month)]
+  embed = tools.embedhandler(
+    f"Operations for {month_str} {year}",
+    0x154c79,
+    None,
+    False,
+    None,
+    client
+  )
+  print(data)
+  embed = await tools.embedhandler.sendembed(embed, sanitised_data)
+  channel = client.get_channel(data["channel id"])
+  message = await channel.fetch_message(data["message id"])
+  await message.edit(embed=embed)
 
 @client.command(brief="Moves entire schedule post to an archive")
 async def movepost (ctx, year:int, month:int) -> None:

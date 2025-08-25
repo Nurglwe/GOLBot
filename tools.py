@@ -34,7 +34,10 @@ class embedhandler:
     keys=list(args.keys())
     vals=list(args.values())
     for i in range(len(vals)):
-      embed.add_field(name=keys[i],value=vals[i],inline=self.inl)
+      output_str = ""
+      for val in vals[i]:
+        output_str = output_str + str(val) + "\n"
+      embed.add_field(name=keys[i],value=output_str,inline=self.inl)
     if not(self.sendto is None):
       return await self.sendto.send(embed=embed)
     else:
