@@ -1,0 +1,5 @@
+/bin
+/.idea
+/lib
+/__pycache__
+Dockerfile
