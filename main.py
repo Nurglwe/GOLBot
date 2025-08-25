@@ -1,11 +1,11 @@
 import discord.object
-import discord,os,tools, calendar, pickle
-from discord.ext import commands
-from datetime import date
+import discord,os,tools, calendar, pickle, datetime
+from discord.ext import commands, tasks
 from discord import app_commands
 intents = discord.Intents.all()
 intents.members = True
 client = commands.Bot(command_prefix="->",intents=intents, guilds=True, members=True)
+
 
 '''
 
@@ -13,9 +13,24 @@ Below is events
 
 '''
 
+@tasks.loop(hours = 24)
+async def check_date(client):
+  current_date = datetime.date.today()
+  current_month = current_date.month
+  current_year = current_date.year
+
+  if current_date.day == 20:
+    if current_month > 11:
+      current_month = 0
+      current_year += 1
+    await makeschedule(None, current_date.year, current_month + 1)
+    await movepost (None, current_year, current_month)
+
+
 @client.event
 async def on_ready():
   print("Ready")
+  check_date.start(client)
 
 '''
 
@@ -31,7 +46,6 @@ Below is commands
 @app_commands.describe(month= "Month (1-12)", year="Year")
 interaction: discord.Interaction,
 '''
-
 @client.command(brief="Create an orbat for a given year (YYYY) and month (M or MM)")
 async def makeschedule(ctx, year: int, month: int) -> None:
   standard_op_days = {}
@@ -72,6 +86,7 @@ async def makeschedule(ctx, year: int, month: int) -> None:
   else:
     await ctx.channel.send("Error: Month input is less than 1 or greater than 12")
     return
+
 
 @client.command(brief="Add name(s) from operation automatically. Takes Year (YYYY), Month(M or MM), day (D or DD) and optionally targetted users")
 async def adddev (ctx, year:int, month:int, day:str, *args) -> None:
@@ -122,6 +137,7 @@ async def adddev (ctx, year:int, month:int, day:str, *args) -> None:
   message = await channel.fetch_message(data["message id"])
   await message.edit(embed=embed)
 
+
 @client.command(brief="Add mission name(s) from operation automatically. Takes Year (YYYY), Month(M or MM), day (D or DD) and optionally targetted users")
 async def addmission (ctx, year:int, month:int, day:str, *args) -> None:
   print(year, month, day, args)
@@ -136,7 +152,6 @@ async def addmission (ctx, year:int, month:int, day:str, *args) -> None:
     await ctx.channel.send("Error: File not found")
     return
   
-  
   for operation in data.keys():
     sub_sect = operation.split(" ")
     if sub_sect[1] == day:
@@ -148,10 +163,10 @@ async def addmission (ctx, year:int, month:int, day:str, *args) -> None:
         print(user)
         output_str = str(output_str) + " " + user
       data[operation] = [data[operation][0], output_str] 
-  
+
   with open(f"./archives/operations-{month}-{year}.pkl", "wb") as f:
     pickle.dump(data, f)
-  
+
   sanitised_data = data.copy()
   sanitised_data.pop("message id")
   sanitised_data.pop("channel id")
@@ -229,6 +244,7 @@ async def removedev (ctx, year:int, month:int, day:str, *args) -> None:
   message = await channel.fetch_message(data["message id"])
   await message.edit(embed=embed)
 
+
 @client.command(brief="Remove mission name(s) from operation automatically. Takes Year (YYYY), Month(M or MM) and day (D or DD)")
 async def removemission (ctx, year:int, month:int, day:str) -> None:
   print(year, month, day)
@@ -270,6 +286,7 @@ async def removemission (ctx, year:int, month:int, day:str) -> None:
   message = await channel.fetch_message(data["message id"])
   await message.edit(embed=embed)
 
+
 @client.command(brief="Moves entire schedule post to an archive")
 async def movepost (ctx, year:int, month:int) -> None:
   print(year, month)
@@ -302,7 +319,6 @@ async def movepost (ctx, year:int, month:int) -> None:
   data["channel id"] = 1409529449120268298
   with open(f"./archives/operations-{month}-{year}.pkl", "wb") as f:
     pickle.dump(data, f)
-
   print(data)
 
 
@@ -316,7 +332,6 @@ async def synctree (ctx):
   if ctx.author.id == 220213079944724482:
     resp = await client.tree.sync()
     await ctx.send(f"Commands synced with response {resp}")
-  
 
 
 # Don't touch below
