@@ -36,7 +36,10 @@ class embedhandler:
     for i in range(len(vals)):
       embed.add_field(name=keys[i],value=vals[i],inline=self.inl)
     if not(self.sendto is None):
-      await self.sendto.send(embed=embed)
+      return await self.sendto.send(embed=embed)
+    else:
+      return embed
+    
 
 
 class alltheobject:
