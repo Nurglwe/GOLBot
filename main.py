@@ -2,6 +2,7 @@ import discord.object
 import discord,os,tools, calendar, pickle, datetime
 from discord.ext import commands, tasks
 from discord import app_commands
+from typing import Optional
 intents = discord.Intents.all()
 intents.members = True
 client = commands.Bot(command_prefix="->",intents=intents, guilds=True, members=True)
@@ -23,9 +24,19 @@ async def check_date(client):
     if current_month > 11:
       current_month = 0
       current_year += 1
-    await makeschedule(None, current_date.year, current_month + 1)
-    await movepost (None, current_year, current_month)
+    try:
+      await makeschedule(None, current_date.year, current_month + 1)
+    except:
+      print("Error making new schedule")
 
+  if current_date.day == 1:
+    if current_month < 2:
+      current_month = 13
+      current_year -= 1
+    try:
+      await movepost (None, current_year, current_month-1)
+    except:
+      print("Error moving schedule")
 
 @client.event
 async def on_ready():
@@ -38,21 +49,19 @@ Below is commands
 
 '''
 
-'''
+
 @client.tree.command(
     name="create-schedule", 
     description="Creates a table of thursdays and sundays in a month"
   )
 @app_commands.describe(month= "Month (1-12)", year="Year")
-interaction: discord.Interaction,
-'''
-@client.command(brief="Create an orbat for a given year (YYYY) and month (M or MM)")
-async def makeschedule(ctx, year: int, month: int) -> None:
+#@client.command(brief="Create an orbat for a given year (YYYY) and month (M or MM)")
+async def makeschedule(interaction: discord.Interaction, year: int, month: int) -> None:
   standard_op_days = {}
   print(month, year)
   print()
   if os.path.exists(f"./archives/operations-{month}-{year}.pkl"):
-    await ctx.channel.send("Error file already exists. Please delete it or edit it.")
+    await interaction.response.send_message("Error file already exists. Please delete it or edit it.")
     return
   
   if not(month < 1 or month > 12):
@@ -83,23 +92,29 @@ async def makeschedule(ctx, year: int, month: int) -> None:
     with open(f"./archives/operations-{month}-{year}.pkl", "wb") as f:
       pickle.dump(standard_op_days, f)
     print(standard_op_days)
+    await interaction.response.send_message("Operation completed successfully")
   else:
-    await ctx.channel.send("Error: Month input is less than 1 or greater than 12")
+    await interaction.response.send_message("Error: Month input is less than 1 or greater than 12")
     return
 
-
-@client.command(brief="Add name(s) from operation automatically. Takes Year (YYYY), Month(M or MM), day (D or DD) and optionally targetted users")
-async def adddev (ctx, year:int, month:int, day:str, *args) -> None:
+@client.tree.command(
+    name="add-developer", 
+    description="Adds a developer(s) to an operation day")
+@app_commands.describe(month= "Month (1-12)", year="Year", args="Targetted users")
+#@client.command(brief="Add name(s) from operation automatically. Takes Year (YYYY), Month(M or MM), day (D or DD) and optionally targetted users")
+async def adddev (interaction: discord.Interaction, year:int, month:int, day:str, args: Optional[str]= None) -> None:
   print(year, month, day, args)
-  if len(args) == 0:
-    target = [f"<@{ctx.author.id}>"]
+  if args is None:
+    target = [f"<@{interaction.user.id}>"]
   else:
-    target = [user for user in args]
+    args = args.split(">")
+    target = [user.strip()+">" for user in args]
+
   try:
     with open(f"./archives/operations-{month}-{year}.pkl", "rb") as f:
       data = pickle.load(f)
   except:
-    await ctx.channel.send("Error: File not found")
+    await interaction.response.send_message("Error: File not found")
     return
   
   for operation in data.keys():
@@ -110,8 +125,9 @@ async def adddev (ctx, year:int, month:int, day:str, *args) -> None:
       if output_str == None:
         output_str = ''
       for user in target:
-        print(user)
-        output_str = str(output_str) + " " + user
+        if user not in output_str:
+          print(user)
+          output_str = str(output_str) + " " + user.strip()
       data[operation] = [output_str, data[operation][1]] 
 
   with open(f"./archives/operations-{month}-{year}.pkl", "wb") as f:
@@ -120,8 +136,6 @@ async def adddev (ctx, year:int, month:int, day:str, *args) -> None:
   sanitised_data = data.copy()
   sanitised_data.pop("message id")
   sanitised_data.pop("channel id")
-  print(sanitised_data)
-  print(data)
 
   month_str = calendar.month_name[int(month)]
   embed = tools.embedhandler(
@@ -136,33 +150,28 @@ async def adddev (ctx, year:int, month:int, day:str, *args) -> None:
   channel = client.get_channel(data["channel id"])
   message = await channel.fetch_message(data["message id"])
   await message.edit(embed=embed)
+  await interaction.response.send_message("Operation completed successfully")
 
 
-@client.command(brief="Add mission name(s) from operation automatically. Takes Year (YYYY), Month(M or MM), day (D or DD) and optionally targetted users")
-async def addmission (ctx, year:int, month:int, day:str, *args) -> None:
+@client.tree.command(
+    name="add-mission-name", 
+    description="Adds a mission(s) to an operation day")
+@app_commands.describe(month= "Month (1-12)", year="Year", args="Mission name")
+#@client.command(brief="Add mission name(s) from operation automatically. Takes Year (YYYY), Month(M or MM), day (D or DD) and optionally targetted users")
+async def addmission (interaction: discord.Interaction, year:int, month:int, day:str, args: str) -> None:
   print(year, month, day, args)
-  if len(args) == 0:
-    target = [f"<@{ctx.author.id}>"]
-  else:
-    target = [user for user in args]
   try:
     with open(f"./archives/operations-{month}-{year}.pkl", "rb") as f:
       data = pickle.load(f)
   except:
-    await ctx.channel.send("Error: File not found")
+    await interaction.response.send_message("Error: File not found")
     return
   
   for operation in data.keys():
     sub_sect = operation.split(" ")
     if sub_sect[1] == day:
       print(data[operation][1])
-      output_str = data[operation][1]
-      if output_str == None:
-        output_str = ''
-      for user in target:
-        print(user)
-        output_str = str(output_str) + " " + user
-      data[operation] = [data[operation][0], output_str] 
+      data[operation] = [data[operation][0], args] 
 
   with open(f"./archives/operations-{month}-{year}.pkl", "wb") as f:
     pickle.dump(data, f)
@@ -186,21 +195,28 @@ async def addmission (ctx, year:int, month:int, day:str, *args) -> None:
   channel = client.get_channel(data["channel id"])
   message = await channel.fetch_message(data["message id"])
   await message.edit(embed=embed)
+  await interaction.response.send_message("Operation completed successfully")
 
 
-@client.command(brief="Remove name(s) from operation automatically. Takes Year (YYYY), Month(M or MM) and day (D or DD)")
-async def removedev (ctx, year:int, month:int, day:str, *args) -> None:
+@client.tree.command(
+    name="remove-developer", 
+    description="Adds a developer(s) to an operation day")
+@app_commands.describe(month= "Month (1-12)", year="Year", args="Targetted user")
+#@client.command(brief="Remove name(s) from operation automatically. Takes Year (YYYY), Month(M or MM) and day (D or DD)")
+async def removedev (interaction: discord.Interaction, year:int, month:int, day:str, args: Optional[str]= None) -> None:
   print(year, month, day, args)
-  if len(args) == 0:
-    target = [f"<@{ctx.author.id}>"]
+  if args is None:
+    target = [f"<@{interaction.user.id}>"]
   else:
-    target = [user for user in args]
+    args = args.split(">")
+    target = [user+">" for user in args]
   try:
     with open(f"./archives/operations-{month}-{year}.pkl", "rb") as f:
       data = pickle.load(f)
   except:
-    await ctx.channel.send("Error: File not found")
-
+    await interaction.response.send_message("Error: File not found")
+    return
+  print(target)
   print(data)
   
   output_str = ""
@@ -212,10 +228,15 @@ async def removedev (ctx, year:int, month:int, day:str, *args) -> None:
       users = data[operation][0].split(" ")
       print(users)
       for user in target:
-        users.remove(user)
+        if user != ">":
+          print(user)
+          try:
+            users.remove(user)
+          except:
+            print("Error")
       for user in users:
         if user != '':
-          output_str = output_str + user + " "
+          output_str = output_str + user.strip() + " "
       print(output_str)
       if not output_str:
         output_str = None
@@ -243,16 +264,22 @@ async def removedev (ctx, year:int, month:int, day:str, *args) -> None:
   channel = client.get_channel(data["channel id"])
   message = await channel.fetch_message(data["message id"])
   await message.edit(embed=embed)
+  await interaction.response.send_message("Operation completed successfully")
 
 
-@client.command(brief="Remove mission name(s) from operation automatically. Takes Year (YYYY), Month(M or MM) and day (D or DD)")
-async def removemission (ctx, year:int, month:int, day:str) -> None:
+@client.tree.command(
+    name="remove-mission-name", 
+    description="Removes a mission(s) from an operation day")
+@app_commands.describe(year="Year", month= "Month (1-12)", day="Day")
+#@client.command(brief="Remove mission name(s) from operation automatically. Takes Year (YYYY), Month(M or MM) and day (D or DD)")
+async def removemission (interaction: discord.Interaction, year:int, month:int, day:str) -> None:
   print(year, month, day)
   try:
     with open(f"./archives/operations-{month}-{year}.pkl", "rb") as f:
       data = pickle.load(f)
   except:
-    await ctx.channel.send("Error: File not found")
+    await interaction.response.send_message("Error: File not found")
+    return
 
   print(data)
   
@@ -285,16 +312,22 @@ async def removemission (ctx, year:int, month:int, day:str) -> None:
   channel = client.get_channel(data["channel id"])
   message = await channel.fetch_message(data["message id"])
   await message.edit(embed=embed)
+  await interaction.response.send_message("Operation completed successfully")
 
 
-@client.command(brief="Moves entire schedule post to an archive")
-async def movepost (ctx, year:int, month:int) -> None:
+@client.tree.command(
+    name="move-post", 
+    description="Moves a post to the archives channel")
+@app_commands.describe(year="Year", month= "Month (1-12)")
+#@client.command(brief="Moves entire schedule post to an archive")
+async def movepost (interaction: discord.Interaction, year:int, month:int) -> None:
   print(year, month)
   try:
     with open(f"./archives/operations-{month}-{year}.pkl", "rb") as f:
       data = pickle.load(f)
   except:
-    await ctx.channel.send("Error: File not found")
+    await interaction.response.send_message("Error: File not found")
+    return
 
   channel = client.get_channel(data["channel id"])
   message = await channel.fetch_message(data["message id"])
@@ -320,6 +353,7 @@ async def movepost (ctx, year:int, month:int) -> None:
   with open(f"./archives/operations-{month}-{year}.pkl", "wb") as f:
     pickle.dump(data, f)
   print(data)
+  await interaction.response.send_message("Operation completed successfully")
 
 
 @client.command(brief="Ping in ms")
